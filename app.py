@@ -1,52 +1,77 @@
 import streamlit as st
-import pickle
-import numpy as np
+import joblib
+import pandas as pd
 
 # Load the trained model
-with open('diabetes_rf_model.pkl', 'rb') as file:
-    model = pickle.load(file)
+model = joblib.load('diabetes_rf_model.pkl')
 
-# Page config
 st.set_page_config(page_title="Diabetes Risk Predictor", layout="centered")
 
-st.title("Diabetes Risk Predictor")
-st.markdown("Enter the information below to estimate diabetes risk based on lifestyle and health indicators.")
+st.title("🧠 Diabetes Risk Predictor")
+st.markdown("Enter your details below to estimate the likelihood of developing diabetes.")
 
-# Feature input
-def user_input():
+# Input form
+with st.form("prediction_form"):
+    st.subheader("Lifestyle & Health Information")
+
     high_bp = st.selectbox("High Blood Pressure", [0, 1])
     high_chol = st.selectbox("High Cholesterol", [0, 1])
-    chol_check = st.selectbox("Cholesterol Check", [0, 1])
+    chol_check = st.selectbox("Cholesterol Check in Last 5 Years", [0, 1])
     bmi = st.slider("BMI", 10.0, 50.0, 25.0)
     smoker = st.selectbox("Smoker", [0, 1])
-    phys_activity = st.selectbox("Physical Activity", [0, 1])
+    stroke = st.selectbox("History of Stroke", [0, 1])
+    heart_disease = st.selectbox("Heart Disease or Attack", [0, 1])
+    phys_activity = st.selectbox("Physically Active", [0, 1])
     fruits = st.selectbox("Consumes Fruits", [0, 1])
     veggies = st.selectbox("Consumes Vegetables", [0, 1])
     alcohol = st.selectbox("Heavy Alcohol Consumption", [0, 1])
     healthcare = st.selectbox("Has Healthcare Access", [0, 1])
     no_doc = st.selectbox("Could Not Afford Doctor", [0, 1])
-    gen_health = st.slider("General Health (1=Excellent, 5=Poor)", 1, 5, 3)
-    mental_health = st.slider("Days of Poor Mental Health (past 30 days)", 0, 30, 5)
-    physical_health = st.slider("Days of Poor Physical Health (past 30 days)", 0, 30, 5)
+    mental_health = st.slider("Days of Poor Mental Health (last 30 days)", 0, 30, 5)
+    physical_health = st.slider("Days of Poor Physical Health (last 30 days)", 0, 30, 5)
     diff_walk = st.selectbox("Difficulty Walking", [0, 1])
     sex = st.selectbox("Sex (0 = Female, 1 = Male)", [0, 1])
-    age = st.slider("Age Group Code (1=18-24, 13=80+)", 1, 13, 5)
-    education = st.slider("Education Level (1-6)", 1, 6, 4)
-    income = st.slider("Income Level (1-8)", 1, 8, 4)
+    age = st.slider("Age Group Code (1 = 18-24, 13 = 80+)", 1, 13, 5)
+    education = st.slider("Education Level (1 = Low, 6 = High)", 1, 6, 4)
+    income = st.slider("Income Level (1 = Low, 8 = High)", 1, 8, 4)
 
-    features = [high_bp, high_chol, chol_check, bmi, smoker, phys_activity, fruits, veggies,
-                alcohol, healthcare, no_doc, gen_health, mental_health, physical_health,
-                diff_walk, sex, age, education, income]
+    submit = st.form_submit_button("Predict")
 
-    return np.array([features])
+if submit:
+    # Create DataFrame
+    input_df = pd.DataFrame({
+        'HighBP': [high_bp],
+        'HighChol': [high_chol],
+        'CholCheck': [chol_check],
+        'BMI': [bmi],
+        'Smoker': [smoker],
+        'Stroke': [stroke],
+        'HeartDiseaseorAttack': [heart_disease],
+        'PhysActivity': [phys_activity],
+        'Fruits': [fruits],
+        'Veggies': [veggies],
+        'HvyAlcoholConsump': [alcohol],
+        'AnyHealthcare': [healthcare],
+        'NoDocbcCost': [no_doc],
+        'MentHlth': [mental_health],
+        'PhysHlth': [physical_health],
+        'DiffWalk': [diff_walk],
+        'Sex': [sex],
+        'Age': [age],
+        'Education': [education],
+        'Income': [income]
+    })
 
-input_data = user_input()
+    # Add engineered feature
+    input_df['HealthBurden'] = input_df['MentHlth'] + input_df['PhysHlth']
+    input_df['HealthBurden'] = input_df['HealthBurden'].clip(upper=30)
 
-# Prediction
-if st.button("Predict"):
-    prediction = model.predict(input_data)
-    probability = model.predict_proba(input_data)[0][1]
+    # Predict
+    prediction = model.predict(input_df)
+    probability = model.predict_proba(input_df)[0][1]
 
+    # Output
+    st.subheader("Prediction Result:")
     if prediction[0] == 1:
         st.error(f"High Risk of Diabetes ({probability:.2%} confidence)")
     else:
