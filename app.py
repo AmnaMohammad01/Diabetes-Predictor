@@ -7,7 +7,7 @@ model = joblib.load('diabetes_rf_model.pkl')
 
 st.set_page_config(page_title="Diabetes Risk Predictor", layout="centered")
 
-st.title("🧠 Diabetes Risk Predictor")
+st.title("Diabetes Risk Predictor")
 st.markdown("Enter your details below to estimate the likelihood of developing diabetes.")
 
 # Input form
@@ -73,6 +73,6 @@ if submit:
     # Output
     st.subheader("Prediction Result:")
     if prediction[0] == 1:
-        st.error(f"High Risk of Diabetes ({probability:.2%} confidence)")
+        st.error(f"High Risk of Diabetes")
     else:
-        st.success(f"Low Risk of Diabetes ({1 - probability:.2%} confidence)")
+        st.success(f"Low Risk of Diabetes")
